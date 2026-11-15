@@ -175,7 +175,8 @@ class MainRedisConfig extends RedisConfig
     public function setUp(): void
     {
         $redis = self::service();
-        $this->host = $redis->socketPath();       // a socket path is a host for phpredis
+        $this->host = $redis->socketPath();       // a socket path is a host for phpredis…
+        $this->port = 0;                          // …when the port is not one
         $this->password = $redis->password ?? '';
     }
 }
@@ -185,6 +186,10 @@ class MainRedisConfig extends RedisConfig
 // bootstrap.php
 $components->service(MainRedisConfig::service());
 ```
+
+`port = 0` is needed: phpredis takes a path for a socket only when the port is less than
+1. With winter-redis's default, 6379, it looks the path up as a host name and fails with
+`DNS Lookup resolve failed`.
 
 ---
 
