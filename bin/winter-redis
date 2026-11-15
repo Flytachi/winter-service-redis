@@ -1,0 +1,76 @@
+#!/bin/sh
+# Starts Redis for a Winter application: the component's command (Redis::component()).
+#
+# The configuration is written to the server's stdin, not its command line: the password
+# is in it, and a command line is anyone's to read (ps). Then the script becomes the
+# server (exec), so the stop signal reaches it directly. What follows `--` — the
+# service's settings and args — is passed on as they are.
+set -eu
+
+say() { printf 'winter-redis: %s\n' "$*" >&2; }
+fail() { say "ERROR: $*"; exit "${CODE:-1}"; }
+
+DATA= SOCKET= PORT= HOST= PERSIST=1 AOF=0 MAXMEMORY= POLICY=
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --data=*) DATA=${1#*=} ;;
+        --socket=*) SOCKET=${1#*=} ;;
+        --port=*) PORT=${1#*=} ;;
+        --host=*) HOST=${1#*=} ;;
+        --persist=*) PERSIST=${1#*=} ;;
+        --aof=*) AOF=${1#*=} ;;
+        --maxmemory=*) MAXMEMORY=${1#*=} ;;
+        --policy=*) POLICY=${1#*=} ;;
+        --) shift; break ;;
+        *) CODE=2 fail "unknown option $1" ;;
+    esac
+    shift
+done
+PASSWORD=${WINTER_REDIS_PASSWORD:-}
+unset WINTER_REDIS_PASSWORD
+
+command -v redis-server >/dev/null 2>&1 || fail "Redis is not installed: no redis-server. Add it to the image: call service docker"
+mkdir -p "$SOCKET"
+if [ "$PERSIST" = 1 ]; then
+    mkdir -p "$DATA"
+    dir=$DATA
+else
+    # Nothing is saved; the server still needs a directory of its own for what it is told
+    # to write (a SAVE asked for by hand).
+    dir=$SOCKET
+fi
+
+# A quoted value of the configuration: a backslash and a quote escaped.
+quoted() { printf '"%s"' "$(printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g')"; }
+
+config() {
+    echo "daemonize no"
+    echo "logfile \"\""
+    echo "dir $(quoted "$dir")"
+    echo "unixsocket $(quoted "$SOCKET/redis.sock")"
+    echo "unixsocketperm 700"
+    if [ -n "$HOST" ]; then
+        echo "bind $HOST"
+        echo "port $PORT"
+    else
+        echo "port 0"
+    fi
+    [ -n "$PASSWORD" ] && echo "requirepass $(quoted "$PASSWORD")"
+    if [ "$PERSIST" = 1 ]; then
+        [ "$AOF" = 1 ] && echo "appendonly yes" || echo "appendonly no"
+    else
+        echo 'save ""'
+        echo "appendonly no"
+    fi
+    [ -n "$MAXMEMORY" ] && echo "maxmemory $MAXMEMORY"
+    [ -n "$POLICY" ] && echo "maxmemory-policy $POLICY"
+    return 0
+}
+
+# A here-document, not a pipe: exec in a pipeline would replace a subshell, and the stop
+# signal would reach this script instead of the server. The shell feeds it through a pipe
+# of its own: the password is never on disk.
+conf=$(config)
+exec redis-server - "$@" <<EOF
+$conf
+EOF

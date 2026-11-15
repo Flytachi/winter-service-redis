@@ -1,0 +1,7 @@
+# The integration tests' image: flytachi/winter with Redis. The package and the kernel
+# are mounted, not copied: see test.sh.
+FROM flytachi/winter:8.5
+USER root
+RUN apk add --no-cache redis
+USER winter
+WORKDIR /pkg

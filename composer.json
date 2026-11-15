@@ -1,0 +1,52 @@
+{
+    "name": "flytachi/winter-service-redis",
+    "description": "Redis inside a Winter application's container: a service the application starts first, checks, restarts and stops last",
+    "type": "library",
+    "license": "MIT",
+    "scripts": {
+        "test": "phpunit",
+        "test-integration": "sh docker/test.sh",
+        "cs-check": "phpcs .",
+        "cs-fix": "phpcbf ."
+    },
+    "autoload": {
+        "psr-4": {
+            "Flytachi\\Winter\\Service\\Redis\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Flytachi\\Winter\\Service\\Redis\\Tests\\": "tests/"
+        }
+    },
+    "require": {
+        "php": ">=8.4",
+        "flytachi/winter-kernel": "^4.5",
+        "ext-pcntl": "*"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "@stable",
+        "squizlabs/php_codesniffer": "@stable"
+    },
+    "homepage": "https://winterframe.net",
+    "support": {
+        "issues": "https://github.com/flytachi/winter-service-redis/issues",
+        "source": "https://github.com/flytachi/winter-service-redis",
+        "docs": "https://winterframe.net/docs/services"
+    },
+    "keywords": [
+        "redis",
+        "cache",
+        "key-value",
+        "service",
+        "docker",
+        "swoole",
+        "winter"
+    ],
+    "authors": [
+        {
+            "name": "Flytachi",
+            "email": "jason.khan.x@gmail.com"
+        }
+    ]
+}
