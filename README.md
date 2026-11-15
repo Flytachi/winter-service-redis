@@ -151,27 +151,44 @@ socket, inside the container, that is so.
 ## Connecting
 
 ```php
-$redis = new Redis();
+$redis->socketPath();   // /run/redis/redis.sock
+```
 
+### With phpredis
+
+```php
 $client = new \Redis();
-$client->connect($redis->socketPath());      // /run/redis/redis.sock
+$client->connect($redis->socketPath());
+if ($redis->password !== null) {
+    $client->auth($redis->password);
+}
 ```
 
 ### With winter-redis
+
+The configuration winter-redis connects with runs the server too:
 
 ```php
 namespace Main\Configs;
 
 use Flytachi\Winter\Redis\Config\RedisConfig;
+use Flytachi\Winter\Redis\Pool\RedisPoolConfigInterface;
+use Flytachi\Winter\Redis\Pool\RedisPoolTrait;
 use Flytachi\Winter\Service\Redis\Redis;
 
-class MainRedisConfig extends RedisConfig
+class MainRedisConfig extends RedisConfig implements RedisPoolConfigInterface
 {
+    use RedisPoolTrait;
+
+    public int $poolMaxConnections = 10;
+
+    /** What the application runs. */
     public static function service(): Redis
     {
         return new Redis(maxmemory: '256mb');
     }
 
+    /** How winter-redis connects to it. */
     public function setUp(): void
     {
         $redis = self::service();
@@ -187,9 +204,24 @@ class MainRedisConfig extends RedisConfig
 $components->service(MainRedisConfig::service());
 ```
 
+A store points at it:
+
+```php
+class VisitStore extends RedisStore
+{
+    protected string $redisConfigClassName = MainRedisConfig::class;
+    protected string $prefix = 'visits:';
+}
+
+$count = new VisitStore()->increment('total');
+```
+
 `port = 0` is needed: phpredis takes a path for a socket only when the port is less than
 1. With winter-redis's default, 6379, it looks the path up as a host name and fails with
 `DNS Lookup resolve failed`.
+
+Over TCP (`host` set), `setUp()` sets `host` — `127.0.0.1` or the container's name — and
+`port = $redis->port`, and the password is mandatory.
 
 ---
 

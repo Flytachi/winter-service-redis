@@ -22,4 +22,6 @@ All notable changes to this package are documented here. The format follows
   line; the calm last words of a stop at info.
 - `image()` for `call service docker`: `redis`; the socket directory, and with `persist`
   the data directory and its volume, owned by winter.
-- `socketPath()` and `isReady()` for connecting and checking.
+- `socketPath()` and `isReady()` for connecting and checking; the README's winter-redis
+  configuration connects through the socket (`port = 0`: phpredis takes a path for a
+  socket only then).
