@@ -1,0 +1,11 @@
+# .gitattributes
+/tests         export-ignore
+/docker        export-ignore
+/.github       export-ignore
+.gitignore     export-ignore
+.gitattributes export-ignore
+phpcs.xml      export-ignore
+phpunit.xml    export-ignore
+
+# The start scripts run through /bin/sh: a CRLF checkout would break them.
+/bin/*         text eol=lf
